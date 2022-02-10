@@ -22,8 +22,13 @@ from evaluation import evaluate_loc, evaluate_seg
 from location import get_edge
 
 
+if torch.cuda.is_available():
 # os.environ['CUDA_VISIBLE_DEVICES'] = '2, 3'
-cudnn.benchmark = True
+# cudnn.benchmark = True
+    device = torch.device("cuda")
+else:
+    device = torch.device("cpu")
+    
 
 experiment_name = 'M1-e5UNet'
 dataset_name = 'CASIA-Iris-Mobile-V1.0'
@@ -49,7 +54,7 @@ def main(train_args):
     logging.info(train_args)
 
     ############################################# define a CNN #################################################
-    net = EfficientUNet(num_classes=3).cuda()
+    net = EfficientUNet(num_classes=3).to(device)
     if train_args['checkpoints']:
         net.load_state_dict(torch.load(train_args['checkpoints']))
     if train_args['gpu_ids']:
@@ -76,7 +81,7 @@ def main(train_args):
 
     ########################################### criterion #############################################
     criterion = Make_Criterion(deep_supervise = 1)
-    heatmap_criteria = torch.nn.MSELoss().cuda()
+    heatmap_criteria = torch.nn.MSELoss().to(device)
     logging.info(f'''criterion is ready! \n{criterion} \n{heatmap_criteria}''')
 
     ########################################### optimizer #############################################
@@ -136,11 +141,11 @@ def train(writer, train_loader, net, criterion, heatmap_criteria, optimizer, epo
             data['image'], data['mask'], data['iris_edge_mask'], data['pupil_edge_mask'], data['heatmap'] #BCHW
         
         assert image.size()[2:] == mask.size()[2:]
-        image = Variable(image).cuda()
-        mask = Variable(mask).cuda()
-        iris_mask = Variable(iris_mask).cuda()
-        pupil_mask = Variable(pupil_mask).cuda()
-        heatmap = Variable(heatmap).cuda()
+        image = Variable(image).to(device)
+        mask = Variable(mask).to(device)
+        iris_mask = Variable(iris_mask).to(device)
+        pupil_mask = Variable(pupil_mask).to(device)
+        heatmap = Variable(heatmap).to(device)
 
         optimizer.zero_grad()
         outputs = net(image)
@@ -190,12 +195,11 @@ def validate(writer, val_loader, net, criterion, optimizer, epoch, train_args):
             data['image'], data['mask'], data['iris_edge'], \
             data['iris_edge_mask'], data['pupil_edge'], data['pupil_edge_mask']
    
-        image = Variable(image).cuda()
-        mask = Variable(mask).cuda()
-        iris_edge = Variable(iris_edge).cuda()
-        iris_mask = Variable(iris_mask).cuda()
-        pupil_edge = Variable(pupil_edge).cuda()
-        pupil_mask = Variable(pupil_mask).cuda()
+        image = Variable(image).to(device)
+        mask = Variable(mask).to(device)
+        iris_edge = Variable(iris_edge).to(device)
+        iris_mask = Variable(iris_mask).to(device)
+        pupil_edge = Variable(pupil_edge).to(device)
         
         with torch.no_grad():
             outputs = net(image)
