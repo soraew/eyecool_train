@@ -22,6 +22,7 @@ from evaluation import evaluate_loc, evaluate_seg
 from location import get_edge
 
 
+
 if torch.cuda.is_available():
 # os.environ['CUDA_VISIBLE_DEVICES'] = '2, 3'
 # cudnn.benchmark = True
@@ -46,7 +47,7 @@ def get_args():
     return parser.parse_args()
 
 
-def main(train_args):
+def main(train_args, data_root):
     ########################################### logging and writer #############################################
     writer = SummaryWriter(log_dir=os.path.join(log_path, 'summarywriter_'+train_args['log_name'].split('.')[0]), comment=train_args['log_name'])
 
@@ -71,8 +72,9 @@ def main(train_args):
     val_augment = A.Compose([
         # A.Resize(320, 544) # for Africa dataset
     ])
-    train_dataset = eyeDataset(dataset_name, mode='train', transform=train_augment)
-    val_dataset = eyeDataset(dataset_name, mode='val', transform=val_augment)
+
+    train_dataset = eyeDataset(dataset_name, data_root=data_root, mode='train', transform=train_augment)
+    val_dataset = eyeDataset(dataset_name, data_root=data_root, mode='val', transform=val_augment)
     train_loader = DataLoader(train_dataset, batch_size=train_args['batch_size'], num_workers=8, drop_last=True)
     val_loader = DataLoader(val_dataset, batch_size=train_args['batch_size'], num_workers=8, drop_last=True)
 
@@ -191,6 +193,9 @@ def validate(writer, val_loader, net, criterion, optimizer, epoch, train_args):
 
     L = len(val_loader)
     for data in val_loader:
+        ###################################################################################################################################################
+        ############ we must change this cause we don't have edge data to train ##########
+        ###################################################################################################################################################
         image, mask, iris_edge, iris_mask, pupil_edge, pupil_mask = \
             data['image'], data['mask'], data['iris_edge'], \
             data['iris_edge_mask'], data['pupil_edge'], data['pupil_edge_mask']
@@ -302,6 +307,7 @@ def check_mkdir(dir_name):
 
 
 if __name__ == '__main__':
+    json_root = "./"
     args = get_args()
     train_args = {
         'epoch_num': args.epoch_num,
@@ -310,6 +316,15 @@ if __name__ == '__main__':
         'checkpoints': args.checkpoints,  # empty string denotes learning from scratch
         'log_name': args.log_name,
         'print_freq': 20,
+        'gpu_ids': args.gpu_ids
+    }
+    train_args = {
+        'epoch_num': 1,
+        'batch_size': 64,
+        'lr': 0.002,
+        'checkpoints': "",  # empty string denotes learning from scratch
+        'log_name': "trial",
+        'print_freq': 1,
         'gpu_ids': args.gpu_ids
     }
 
@@ -324,5 +339,5 @@ if __name__ == '__main__':
         level=logging.INFO,
         format='%(levelname)s: %(message)s'
     )
-
-    main(train_args)
+    
+    main(train_args, json_root)

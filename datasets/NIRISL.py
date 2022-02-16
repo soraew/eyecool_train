@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 # root  = "../kci_eye"
 root = ''
 
-
+# it's data_root, but it's actually json_root
 def make_dataset_list(data_root, mode):
     if mode == "train":
         # NIR-ISL2021-nucdre/jsons/dataset_f-1_train.jsonl
