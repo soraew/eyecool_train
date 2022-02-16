@@ -55,7 +55,8 @@ def main(train_args, data_root):
     logging.info(train_args)
 
     ############################################# define a CNN #################################################
-    net = EfficientUNet(num_classes=3).to(device)
+    # changed num_classes from 3 to 2
+    net = EfficientUNet(num_classes=2).to(device)
     if train_args['checkpoints']:
         net.load_state_dict(torch.load(train_args['checkpoints']))
     if train_args['gpu_ids']:
@@ -125,6 +126,7 @@ def main(train_args, data_root):
             ))
 
     except KeyboardInterrupt:
+        print("interrupted")
         torch.save(net.module.state_dict(), log_path+'/INTERRUPTED.pth')
         logging.info('Saved interrupt!')
         try:
@@ -139,6 +141,7 @@ def train(writer, train_loader, net, criterion, optimizer, epoch, train_args):
     curr_iter = (epoch - 1) * iters
 
     for i, data in enumerate(train_loader):
+        print("data enumerated : ", i)
         image, iris_mask, pupil_mask = \
             data['image'], data['iris_mask'], data['pupil_mask'] #BCHW
             # deleted mask, iris_edge_mask -> iris_mask, pupil_edge_mask -> pupil_mask, heatmap
@@ -152,8 +155,10 @@ def train(writer, train_loader, net, criterion, optimizer, epoch, train_args):
 
         optimizer.zero_grad()
         outputs = net(image)
-        pred_mask, pred_iris_mask, pred_pupil_mask, pred_heatmap = \
-            outputs['pred_mask'], outputs['pred_iris_mask'], outputs['pred_pupil_mask'], outputs['heatmap']
+        # deleted pred_mask, pred_heatmap
+        pred_iris_mask, pred_pupil_mask = \
+            outputs['pred_iris_mask'], outputs['pred_pupil_mask']
+    
 
         # loss_mask = criterion(pred_mask, mask)
         loss_iris = criterion(pred_iris_mask, iris_mask)
@@ -177,12 +182,17 @@ def train(writer, train_loader, net, criterion, optimizer, epoch, train_args):
         # writer.add_scalar('train_loss_heatmap/iter', loss_heatmap.item(), curr_iter)
 
         if (i + 1) % train_args['print_freq'] == 0:
+            # removed losses that we don't need
             print('epoch:{:2d}  iter/iters:{:3d}/{:3d}  train_loss:{:.9f}   loss_iris:{:.9}   loss_pupil:{:.9}'.format(
                 epoch, i+1, iters, loss, loss_iris, loss_pupil))
             logging.info('epoch:{:2d}  iter/iters:{:3d}/{:3d}  train_loss:{:.9f}  loss_iris:{:.9}   loss_pupil:{:.9}'.format(
                 epoch, i+1, iters, loss, loss_iris, loss_pupil))
 
         curr_iter += 1
+
+        # added this for simple train(one data point)
+        # if i > 1:
+        #     break
 
 
 def validate(writer, val_loader, net, criterion, optimizer, epoch, train_args):
