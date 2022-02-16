@@ -21,16 +21,15 @@ def make_dataset_list(data_root, mode):
     if mode == "train":
         # NIR-ISL2021-nucdre/jsons/dataset_f-1_train.jsonl
         jsonl_path = os.path.join(data_root, "jsons/dataset_f-1_train.jsonl")
-        # jsonl_path = "jsons/dataset_f-1_train.jsonl" >> worked
 
-    if mode == "test": ### changed
+    elif mode == "test": ### changed
         # NIR-ISL2021-nucdre/jsons/dataset_f-1_evaluation.jsonl
         jsonl_path = os.path.join(data_root, "jsons/dataset_f-1_evaluation.jsonl")
         
-    if mode == "valuation":
+    elif mode == "val":
         # NIR-ISL2021-nucdre/jsons/dataset_f-1_validation.jsonl
         jsonl_path = os.path.join(data_root, "jsons/dataset_f-1_validation.jsonl")
-        
+
     with open(jsonl_path, 'r') as json_file:
         json_list = list(json_file)
 
