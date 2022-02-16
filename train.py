@@ -73,7 +73,7 @@ def main(train_args, data_root):
         # A.Resize(320, 544) # for Africa dataset
     ])
 
-    train_dataset = eyeDataset(dataset_name, data_root=data_root, mode='train', transform=train_augment)
+    train_dataset = eyeDataset(dataset_name, data_root=data_root, mode="train", transform=train_augment)
     val_dataset = eyeDataset(dataset_name, data_root=data_root, mode='val', transform=val_augment)
     train_loader = DataLoader(train_dataset, batch_size=train_args['batch_size'], num_workers=8, drop_last=True)
     val_loader = DataLoader(val_dataset, batch_size=train_args['batch_size'], num_workers=8, drop_last=True)
@@ -83,8 +83,8 @@ def main(train_args, data_root):
 
     ########################################### criterion #############################################
     criterion = Make_Criterion(deep_supervise = 1)
-    heatmap_criteria = torch.nn.MSELoss().to(device)
-    logging.info(f'''criterion is ready! \n{criterion} \n{heatmap_criteria}''')
+    # heatmap_criteria = torch.nn.MSELoss().to(device)
+    # logging.info(f'''criterion is ready! \n{criterion} \n{heatmap_criteria}''')
 
     ########################################### optimizer #############################################
     optimizer = optim.Adam([
@@ -105,7 +105,7 @@ def main(train_args, data_root):
         train_args['best_record_outer'] = {'epoch': 0, 'val_loss': 999, 'E1': 999, 'IoU': 0, 'Dice': 0}
 
         for epoch in range(curr_epoch, train_args['epoch_num'] + 1):
-            train(writer, train_loader, net, criterion, heatmap_criteria, optimizer, epoch, train_args)
+            train(writer, train_loader, net, criterion, optimizer, epoch, train_args)
             val_loss = validate(writer, val_loader, net, criterion, optimizer, epoch, train_args)
             scheduler.step(val_loss)
 
@@ -133,52 +133,54 @@ def main(train_args, data_root):
             os._exit(0)
 
 
-def train(writer, train_loader, net, criterion, heatmap_criteria, optimizer, epoch, train_args):
+def train(writer, train_loader, net, criterion, optimizer, epoch, train_args):
     logging.info('--------------------------------------------------training...------------------------------------------------')
     iters = len(train_loader)
     curr_iter = (epoch - 1) * iters
 
     for i, data in enumerate(train_loader):
-        image, mask, iris_mask, pupil_mask, heatmap = \
-            data['image'], data['mask'], data['iris_edge_mask'], data['pupil_edge_mask'], data['heatmap'] #BCHW
+        image, iris_mask, pupil_mask = \
+            data['image'], data['iris_mask'], data['pupil_mask'] #BCHW
+            # deleted mask, iris_edge_mask -> iris_mask, pupil_edge_mask -> pupil_mask, heatmap
         
-        assert image.size()[2:] == mask.size()[2:]
+        # assert image.size()[2:] == mask.size()[2:]
         image = Variable(image).to(device)
-        mask = Variable(mask).to(device)
+        # mask = Variable(mask).to(device)
         iris_mask = Variable(iris_mask).to(device)
         pupil_mask = Variable(pupil_mask).to(device)
-        heatmap = Variable(heatmap).to(device)
+        # heatmap = Variable(heatmap).to(device)
 
         optimizer.zero_grad()
         outputs = net(image)
         pred_mask, pred_iris_mask, pred_pupil_mask, pred_heatmap = \
             outputs['pred_mask'], outputs['pred_iris_mask'], outputs['pred_pupil_mask'], outputs['heatmap']
 
-        loss_mask = criterion(pred_mask, mask)
+        # loss_mask = criterion(pred_mask, mask)
         loss_iris = criterion(pred_iris_mask, iris_mask)
         loss_pupil = criterion(pred_pupil_mask, pupil_mask)
 
-        heatmap0 = transforms.Resize((pred_heatmap[0].size()[2:]))(heatmap)
-        heatmap1 = transforms.Resize((pred_heatmap[1].size()[2:]))(heatmap)
-        heatmap2 = transforms.Resize((pred_heatmap[2].size()[2:]))(heatmap)
-        loss_heatmap = heatmap_criteria(pred_heatmap[0], heatmap0) + heatmap_criteria(pred_heatmap[1], heatmap1) + heatmap_criteria(pred_heatmap[2], heatmap2)
+        # heatmap0 = transforms.Resize((pred_heatmap[0].size()[2:]))(heatmap)
+        # heatmap1 = transforms.Resize((pred_heatmap[1].size()[2:]))(heatmap)
+        # heatmap2 = transforms.Resize((pred_heatmap[2].size()[2:]))(heatmap)
+        # loss_heatmap = heatmap_criteria(pred_heatmap[0], heatmap0) + heatmap_criteria(pred_heatmap[1], heatmap1) + heatmap_criteria(pred_heatmap[2], heatmap2)
 
-        loss = loss_mask + loss_iris + 2*loss_pupil + 0.3*loss_heatmap
+        # loss = loss_mask + loss_iris + 2*loss_pupil + 0.3*loss_heatmap
+        loss = loss_iris + 2*loss_pupil 
 
         loss.backward()
         optimizer.step()
 
         writer.add_scalar('train_loss/iter', loss.item(), curr_iter)
-        writer.add_scalar('train_loss_mask/iter', loss_mask.item(), curr_iter)
+        # writer.add_scalar('train_loss_mask/iter', loss_mask.item(), curr_iter)
         writer.add_scalar('train_loss_iris/iter', loss_iris.item(), curr_iter)
         writer.add_scalar('train_loss_pupil/iter', loss_pupil.item(), curr_iter)
-        writer.add_scalar('train_loss_heatmap/iter', loss_heatmap.item(), curr_iter)
+        # writer.add_scalar('train_loss_heatmap/iter', loss_heatmap.item(), curr_iter)
 
         if (i + 1) % train_args['print_freq'] == 0:
-            print('epoch:{:2d}  iter/iters:{:3d}/{:3d}  train_loss:{:.9f}  loss_mask:{:.9f}  loss_iris:{:.9}   loss_pupil:{:.9}    loss_heatmap:{:.9f}'.format(
-                epoch, i+1, iters, loss, loss_mask, loss_iris, loss_pupil, loss_heatmap))
-            logging.info('epoch:{:2d}  iter/iters:{:3d}/{:3d}  train_loss:{:.9f}  loss_mask:{:.9f}  loss_iris:{:.9}   loss_pupil:{:.9}    loss_heatmap:{:.9f}'.format(
-                epoch, i+1, iters, loss, loss_mask, loss_iris, loss_pupil, loss_heatmap))
+            print('epoch:{:2d}  iter/iters:{:3d}/{:3d}  train_loss:{:.9f}   loss_iris:{:.9}   loss_pupil:{:.9}'.format(
+                epoch, i+1, iters, loss, loss_iris, loss_pupil))
+            logging.info('epoch:{:2d}  iter/iters:{:3d}/{:3d}  train_loss:{:.9f}  loss_iris:{:.9}   loss_pupil:{:.9}'.format(
+                epoch, i+1, iters, loss, loss_iris, loss_pupil))
 
         curr_iter += 1
 
@@ -309,15 +311,15 @@ def check_mkdir(dir_name):
 if __name__ == '__main__':
     json_root = "./"
     args = get_args()
-    train_args = {
-        'epoch_num': args.epoch_num,
-        'batch_size': args.batch_size,
-        'lr': args.lr,
-        'checkpoints': args.checkpoints,  # empty string denotes learning from scratch
-        'log_name': args.log_name,
-        'print_freq': 20,
-        'gpu_ids': args.gpu_ids
-    }
+    # train_args = {
+    #     'epoch_num': args.epoch_num,
+    #     'batch_size': args.batch_size,
+    #     'lr': args.lr,
+    #     'checkpoints': args.checkpoints,  # empty string denotes learning from scratch
+    #     'log_name': args.log_name,
+    #     'print_freq': 20,
+    #     'gpu_ids': args.gpu_ids
+    # }
     train_args = {
         'epoch_num': 1,
         'batch_size': 64,
