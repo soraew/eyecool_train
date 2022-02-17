@@ -112,7 +112,7 @@ class EfficientUNet(nn.Module):
         pred = self.final_head(dec1)
 
         return {
-            'pred_mask': F.interpolate(pred[:,0:1,:,:], x.size()[2:], mode='bilinear', align_corners=True),
+            # 'pred_mask': F.interpolate(pred[:,0:1,:,:], x.size()[2:], mode='bilinear', align_corners=True),
             'pred_iris_mask': F.interpolate(pred[:,1:2,:,:], x.size()[2:], mode='bilinear', align_corners=True),
             'pred_pupil_mask': F.interpolate(pred[:,2:3,:,:], x.size()[2:], mode='bilinear', align_corners=True),
             'heatmap':[dec4_heatmap, dec3_heatmap, dec2_heatmap]
