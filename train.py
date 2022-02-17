@@ -57,6 +57,7 @@ def main(train_args, data_root):
     ############################################# define a CNN #################################################
     # changed num_classes from 3 to 2
     net = EfficientUNet(num_classes=2).to(device)
+    print("net loc size : ", sys.getsizeof(net)/1e6)
     if train_args['checkpoints']:
         net.load_state_dict(torch.load(train_args['checkpoints']))
     if train_args['gpu_ids']:
