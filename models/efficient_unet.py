@@ -113,14 +113,14 @@ class EfficientUNet(nn.Module):
 
         return {
             # 'pred_mask': F.interpolate(pred[:,0:1,:,:], x.size()[2:], mode='bilinear', align_corners=True),
-            'pred_iris_mask': F.interpolate(pred[:,1:2,:,:], x.size()[2:], mode='bilinear', align_corners=True),
-            'pred_pupil_mask': F.interpolate(pred[:,2:3,:,:], x.size()[2:], mode='bilinear', align_corners=True),
+            'pred_iris_mask': F.interpolate(pred[:,0:1,:,:], x.size()[2:], mode='bilinear', align_corners=True),
+            'pred_pupil_mask': F.interpolate(pred[:,1:2,:,:], x.size()[2:], mode='bilinear', align_corners=True),
             'heatmap':[dec4_heatmap, dec3_heatmap, dec2_heatmap]
         }
 
 
 if __name__ == '__main__':
     x = torch.randn(4,3,400,400)
-    net = EfficientUNet(3)
+    net = EfficientUNet(2)
     y = net(x)
     print(y['pred_mask'].size())

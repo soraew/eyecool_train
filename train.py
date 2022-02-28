@@ -2,6 +2,8 @@ import os
 import logging
 from datetime import datetime
 import argparse
+import zipfile
+from tqdm import tqdm
 
 from torch.utils.tensorboard import SummaryWriter
 import torch
@@ -38,12 +40,14 @@ assert dataset_name in ['CASIA-Iris-Africa','CASIA-distance', 'Occlusion', 'Off_
 
 def get_args():
     parser = argparse.ArgumentParser(description='Train paprmeters', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('-e', '--epochs', type=int, default=96, dest='epoch_num')
-    parser.add_argument('-b', '--batch-size', type=int, nargs='?', default=8, dest='batch_size')
-    parser.add_argument('-l', '--learning-rate', type=float, nargs='?', default=0.002, dest='lr')
-    parser.add_argument('--log', type=str, default='logging.log', dest='log_name')
-    parser.add_argument('--ckp', type=str, default=None, help='load a pertrain model from .../xxx.pth', dest='checkpoints')
-    parser.add_argument('--gpu-ids', type=int, nargs='*', help='use cuda', dest='gpu_ids')
+    # parser.add_argument('-e', '--epochs', type=int, default=96, dest='epoch_num')
+    # parser.add_argument('-b', '--batch-size', type=int, nargs='?', default=8, dest='batch_size')
+    # parser.add_argument('-l', '--learning-rate', type=float, nargs='?', default=0.002, dest='lr')
+    # parser.add_argument('--log', type=str, default='logging.log', dest='log_name')
+    # parser.add_argument('--ckp', type=str, default=None, help='load a pertrain model from .../xxx.pth', dest='checkpoints')
+    # parser.add_argument('--gpu-ids', type=int, nargs='*', help='use cuda', dest='gpu_ids')
+    parser.add_argument('--input', default=None)
+    parser.add_argument('--input0', default=None)
     return parser.parse_args()
 
 
@@ -57,7 +61,7 @@ def main(train_args, data_root):
     ############################################# define a CNN #################################################
     # changed num_classes from 3 to 2
     net = EfficientUNet(num_classes=2).to(device)
-    print("net loc size : ", sys.getsizeof(net)/1e6)
+    # print("net loc size : ", sys.getsizeof(net)/1e6) #size of nn
     if train_args['checkpoints']:
         net.load_state_dict(torch.load(train_args['checkpoints']))
     if train_args['gpu_ids']:
@@ -140,9 +144,9 @@ def train(writer, train_loader, net, criterion, optimizer, epoch, train_args):
     logging.info('--------------------------------------------------training...------------------------------------------------')
     iters = len(train_loader)
     curr_iter = (epoch - 1) * iters
-
-    for i, data in enumerate(train_loader):
-        print("data enumerated : ", i)
+    print('--------------------------------------------------training...------------------------------------------------')
+    for i, data in tqdm(enumerate(train_loader)):
+        # print("data enumerated : ", i)
         image, iris_mask, pupil_mask = \
             data['image'], data['iris_mask'], data['pupil_mask'] #BCHW
             # deleted mask, iris_edge_mask -> iris_mask, pupil_edge_mask -> pupil_mask, heatmap
@@ -155,7 +159,8 @@ def train(writer, train_loader, net, criterion, optimizer, epoch, train_args):
         # heatmap = Variable(heatmap).to(device)
 
         optimizer.zero_grad()
-        outputs = net(image)
+        # print("size of image : ", image.shape)
+        outputs = net(image) # Non-empty 4D data tensor expected but got a tensor with sizes [1, 0, 276, 276]
         # deleted pred_mask, pred_heatmap
         pred_iris_mask, pred_pupil_mask = \
             outputs['pred_iris_mask'], outputs['pred_pupil_mask']
@@ -198,7 +203,7 @@ def train(writer, train_loader, net, criterion, optimizer, epoch, train_args):
 
 def validate(writer, val_loader, net, criterion, optimizer, epoch, train_args):
     net.eval()
-
+    print('--------------------------------------------------validating...------------------------------------------------')
     e1, iou, dice = 0, 0, 0
     iris_e1, iris_dice, iris_iou = 0, 0, 0
     pupil_e1, pupil_dice, pupil_iou = 0, 0, 0
@@ -321,7 +326,7 @@ def check_mkdir(dir_name):
 
 if __name__ == '__main__':
     json_root = "./"
-    args = get_args()
+    args = get_args() #path to nucdre_images.zip
     # train_args = {
     #     'epoch_num': args.epoch_num,
     #     'batch_size': args.batch_size,
@@ -333,12 +338,12 @@ if __name__ == '__main__':
     # }
     train_args = {
         'epoch_num': 1,
-        'batch_size': 64,
+        'batch_size': 2,
         'lr': 0.002,
         'checkpoints': "",  # empty string denotes learning from scratch
         'log_name': "trial",
         'print_freq': 1,
-        'gpu_ids': args.gpu_ids
+        'gpu_ids': None
     }
 
     start_time = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -353,4 +358,9 @@ if __name__ == '__main__':
         format='%(levelname)s: %(message)s'
     )
     
+    zip_filename = args.input0
+    with zipfile.ZipFile(zip_filename, "r") as zip_ref:
+        zip_ref.extractall("./")
+
+    print("succesfully opened zip file")
     main(train_args, json_root)

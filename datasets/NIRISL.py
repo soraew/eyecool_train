@@ -89,7 +89,7 @@ class eyeDataset(Dataset):
     # idxが存在しないものもある
     def __getitem__(self, idx):
             
-        ### ここよくわからん
+
         if self.mode == "test": ### changed from evalutation
             image_name = "-".join(self.data_list[idx]["image_path"].split("/"))
             # deleted image_name
@@ -119,7 +119,7 @@ class eyeDataset(Dataset):
         image = np.array(image)
         # print("image.shape>>>>>>>: ", image.shape)==>(240, 240)
         image = cv2.resize(image, (400, 400)) #### changed
-        # print("new size >>>:", image.shape)==>(400, 400)
+        # print("new size >>>:", image.shape)#==>(400, 400)
         regions = self.data_list[idx]["regions"]
 
         
