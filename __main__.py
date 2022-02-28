@@ -201,8 +201,8 @@ def train(writer, train_loader, net, criterion, optimizer, epoch, train_args):
         curr_iter += 1
 
         # added this for debugging(one data point)
-        # if i > 1:
-        #     break
+        if i > 1:
+            break
 
 
 
@@ -232,8 +232,8 @@ def validate(writer, val_loader, net, criterion, optimizer, epoch, train_args):
         with torch.no_grad():
             outputs = net(image)
 
-        pred_mask, pred_iris_mask, pred_pupil_mask = \
-            outputs['pred_mask'], outputs['pred_iris_mask'], outputs['pred_pupil_mask']
+        pred_iris_mask, pred_pupil_mask = \
+            outputs['pred_iris_mask'], outputs['pred_pupil_mask']
 
         # loss_mask = criterion(pred_mask, mask)
         loss_iris = criterion(pred_iris_mask, iris_mask)
@@ -357,7 +357,7 @@ if __name__ == '__main__':
     # }
     train_args = {
         'epoch_num': 1,
-        'batch_size': 2,
+        'batch_size': 1,
         'lr': 0.002,
         'checkpoints': "",  # empty string denotes learning from scratch
         'log_name': "trial",
