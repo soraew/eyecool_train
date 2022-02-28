@@ -193,16 +193,16 @@ def train(writer, train_loader, net, criterion, optimizer, epoch, train_args):
 
         if (i + 1) % train_args['print_freq'] == 0:
             # removed losses that we don't need
-            print('epoch:{:2d}  iter/iters:{:3d}/{:3d} iter%{:.3f} train_loss:{:.9f}   loss_iris:{:.9}   loss_pupil:{:.9}'.format(
-                epoch, i+1, iters, i+1/iters, loss, loss_iris, loss_pupil))
+            print('epoch:{:2d}  iter/iters:{:3d}/{:3d} iter:{:.3f}% train_loss:{:.9f}   loss_iris:{:.9}   loss_pupil:{:.9}'.format(
+                epoch, i+1, iters, float(i+1)/float(iters), loss, loss_iris, loss_pupil))
             logging.info('epoch:{:2d}  iter/iters:{:3d}/{:3d}  train_loss:{:.9f}  loss_iris:{:.9}   loss_pupil:{:.9}'.format(
                 epoch, i+1, iters, loss, loss_iris, loss_pupil))
 
         curr_iter += 1
 
         # added this for debugging(one data point)
-        if i > 1:
-            break
+        # if i > 1:
+        #     break
 
 
 
@@ -292,7 +292,7 @@ def validate(writer, val_loader, net, criterion, optimizer, epoch, train_args):
 
     writer.add_images('image', image, epoch)
     # writer.add_images('mask', mask, epoch)
-    writer.add_images('pred_mask', pred_mask>0, epoch)
+    # writer.add_images('pred_mask', pred_mask>0, epoch)
     writer.add_images('iris_mask', iris_mask, epoch)
     writer.add_images('pred_iris_mask', pred_iris_mask>0, epoch)
     writer.add_images('pupil_mask', pupil_mask, epoch)
@@ -356,8 +356,8 @@ if __name__ == '__main__':
     #     'gpu_ids': args.gpu_ids
     # }
     train_args = {
-        'epoch_num': 1,
-        'batch_size': 1,
+        'epoch_num': 5,
+        'batch_size': 8,
         'lr': 0.002,
         'checkpoints': "",  # empty string denotes learning from scratch
         'log_name': "trial",
