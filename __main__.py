@@ -193,8 +193,8 @@ def train(writer, train_loader, net, criterion, optimizer, epoch, train_args):
 
         if (i + 1) % train_args['print_freq'] == 0:
             # removed losses that we don't need
-            print('epoch:{:2d}  iter/iters:{:3d}/{:3d}  train_loss:{:.9f}   loss_iris:{:.9}   loss_pupil:{:.9}'.format(
-                epoch, i+1, iters, loss, loss_iris, loss_pupil))
+            print('epoch:{:2d}  iter/iters:{:3d}/{:3d} iter%{:.3f} train_loss:{:.9f}   loss_iris:{:.9}   loss_pupil:{:.9}'.format(
+                epoch, i+1, iters, i+1/iters, loss, loss_iris, loss_pupil))
             logging.info('epoch:{:2d}  iter/iters:{:3d}/{:3d}  train_loss:{:.9f}  loss_iris:{:.9}   loss_pupil:{:.9}'.format(
                 epoch, i+1, iters, loss, loss_iris, loss_pupil))
 
@@ -244,13 +244,13 @@ def validate(writer, val_loader, net, criterion, optimizer, epoch, train_args):
         # pred_pupil_circle_mask, pred_pupil_egde, _ = get_edge(pred_pupil_mask) 
 
         #################### val for iris mask ##############
-        iris_val_results = evaluate_loc(pred_iris_mask, iris_mask, dataset_name)  
+        iris_val_results = evaluate_loc(pred_iris_mask, iris_mask)  
         iris_e1 += iris_val_results["E1"]/L
         iris_dice += iris_val_results['Dice']/L
         iris_iou += iris_val_results['IoU']/L
 
         ################### val for pupil mask #############
-        pupil_val_results = evaluate_loc(pred_pupil_mask, pupil_mask, dataset_name)
+        pupil_val_results = evaluate_loc(pred_pupil_mask, pupil_mask)
         pupil_e1 += pupil_val_results['E1']/L
         pupil_dice += pupil_val_results['Dice']/L  
         pupil_iou += pupil_val_results['IoU']/L
