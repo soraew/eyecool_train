@@ -371,7 +371,7 @@ if __name__ == '__main__':
         'batch_size': 1,
         'lr': 0.002,
         'checkpoints': "",  # empty string denotes learning from scratch
-        'log_name': "trial",
+        'log_name': "trial.log",
         'print_freq': 100,
         'gpu_ids': None
     }
