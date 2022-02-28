@@ -200,15 +200,16 @@ def train(writer, train_loader, net, criterion, optimizer, epoch, train_args):
 
         curr_iter += 1
 
-        # added this for simple train(one data point)
+        # added this for debugging(one data point)
         # if i > 1:
         #     break
+
 
 
 def validate(writer, val_loader, net, criterion, optimizer, epoch, train_args):
     net.eval()
     print('--------------------------------------------------validating...------------------------------------------------')
-    e1, iou, dice = 0, 0, 0
+    # e1, iou, dice = 0, 0, 0
     iris_e1, iris_dice, iris_iou = 0, 0, 0
     pupil_e1, pupil_dice, pupil_iou = 0, 0, 0
     # iris_hsdf, pupil_hsdf = 0, 0 # calculate hausdorff distance takes too long
@@ -224,8 +225,9 @@ def validate(writer, val_loader, net, criterion, optimizer, epoch, train_args):
         image = Variable(image).to(device)
         # mask = Variable(mask).to(device)
         # iris_edge = Variable(iris_edge).to(device)
-        iris_mask = Variable(iris_mask).to(device)
         # pupil_edge = Variable(pupil_edge).to(device)
+        iris_mask = Variable(iris_mask).to(device)
+        pupil_mask = Variable(pupil_mask).to(device)
         
         with torch.no_grad():
             outputs = net(image)
@@ -238,61 +240,75 @@ def validate(writer, val_loader, net, criterion, optimizer, epoch, train_args):
         loss_pupil = criterion(pred_pupil_mask, pupil_mask)
         val_loss = loss_iris + loss_pupil        
 
-        pred_iris_circle_mask, pred_iris_edge, _ = get_edge(pred_iris_mask)
-        pred_pupil_circle_mask, pred_pupil_egde, _ = get_edge(pred_pupil_mask)        
-        #################### val for iris mask ###################
-        val_results = evaluate_seg(pred_mask, mask, dataset_name)    
-        e1 += val_results['E1']/L
-        iou += val_results['IoU']/L
-        dice += val_results['Dice']/L
+        # pred_iris_circle_mask, pred_iris_edge, _ = get_edge(pred_iris_mask)
+        # pred_pupil_circle_mask, pred_pupil_egde, _ = get_edge(pred_pupil_mask) 
 
-        #################### val for outer edge ##################
-        iris_val_results = evaluate_loc(pred_iris_circle_mask, iris_mask, pred_iris_edge, iris_edge, dataset_name)
-        iris_e1 += iris_val_results['E1']/L
+        #################### val for iris mask ##############
+        iris_val_results = evaluate_loc(pred_iris_mask, iris_mask, dataset_name)  
+        iris_e1 += iris_val_results["E1"]/L
         iris_dice += iris_val_results['Dice']/L
         iris_iou += iris_val_results['IoU']/L
-        # iris_hsdf += iris_val_results['hsdf']/L
 
-        #################### val for inner edge ##################
-        pupil_val_results = evaluate_loc(pred_pupil_circle_mask, pupil_mask, pred_pupil_egde, pupil_edge, dataset_name)
+        ################### val for pupil mask #############
+        pupil_val_results = evaluate_loc(pred_pupil_mask, pupil_mask, dataset_name)
         pupil_e1 += pupil_val_results['E1']/L
         pupil_dice += pupil_val_results['Dice']/L  
         pupil_iou += pupil_val_results['IoU']/L
+
+             
+        #################### val for mask ###################
+        # val_results = evaluate_seg(pred_mask, mask, dataset_name)    
+        # e1 += val_results['E1']/L
+        # iou += val_results['IoU']/L
+        # dice += val_results['Dice']/L
+
+        #################### val for outer edge ##################
+        # iris_val_results = evaluate_loc(pred_iris_circle_mask, iris_mask, pred_iris_edge, iris_edge, dataset_name)
+        # iris_e1 += iris_val_results['E1']/L
+        # iris_dice += iris_val_results['Dice']/L
+        # iris_iou += iris_val_results['IoU']/L
+        # iris_hsdf += iris_val_results['hsdf']/L
+
+        #################### val for inner edge ##################
+        # pupil_val_results = evaluate_loc(pred_pupil_circle_mask, pupil_mask, pred_pupil_egde, pupil_edge, dataset_name)
+        # pupil_e1 += pupil_val_results['E1']/L
+        # pupil_dice += pupil_val_results['Dice']/L  
+        # pupil_iou += pupil_val_results['IoU']/L
         # pupil_hsdf += pupil_val_results['hsdf']/L
         
     logging.info('------------------------------------------------current val result-----------------------------------------------')    
-    logging.info('>maks      epoch:{:2d}   val loss:{:.7f}   E1:{:.7f}   Dice:{:.7f}   IOU:{:.7f}'. \
-        format(epoch, loss_mask, e1, dice, iou))
+    # logging.info('>mask      epoch:{:2d}   val loss:{:.7f}   E1:{:.7f}   Dice:{:.7f}   IOU:{:.7f}'. \
+        # format(epoch, loss_mask, e1, dice, iou))
     logging.info('>iris      epoch:{:2d}   val loss:{:.7f}   E1:{:.7}    Dice:{:.7f}   IOU:{:.7f}'. \
         format(epoch, loss_iris, iris_e1, iris_dice, iris_iou))
     logging.info('>pupil     epoch:{:2d}   val loss:{:.7f}   E1:{:.7}    Dice:{:.7f}   IOU:{:.7f}'. \
         format(epoch, loss_pupil, pupil_e1, pupil_dice, pupil_iou))
     
     writer.add_scalar('val_loss', val_loss, epoch)
-    writer.add_scalar('e1_val', e1, epoch)
-    writer.add_scalar('iou_val', iou, epoch)
-    writer.add_scalar('dice_val', dice, epoch)
+    # writer.add_scalar('e1_val', e1, epoch)
+    # writer.add_scalar('iou_val', iou, epoch)
+    # writer.add_scalar('dice_val', dice, epoch)
     writer.add_scalar('lr', optimizer.param_groups[1]['lr'], epoch)
 
     writer.add_images('image', image, epoch)
-    writer.add_images('mask', mask, epoch)
+    # writer.add_images('mask', mask, epoch)
     writer.add_images('pred_mask', pred_mask>0, epoch)
     writer.add_images('iris_mask', iris_mask, epoch)
     writer.add_images('pred_iris_mask', pred_iris_mask>0, epoch)
     writer.add_images('pupil_mask', pupil_mask, epoch)
     writer.add_images('pred_pupil_mask', pred_pupil_mask>0, epoch)
 
-    if e1 < train_args['best_record']['E1']:
-        train_args['best_record']['epoch'] = epoch
-        train_args['best_record']['E1'] = e1
-        train_args['best_record']['IoU'] = iou
-        train_args['best_record']['Dice'] = dice
-        if train_args['gpu_ids']:
-            torch.save(net.module.state_dict(), os.path.join(checkpoint_path, 'for_mask.pth'))
-        else:
-            torch.save(net.state_dict(), os.path.join(checkpoint_path, 'for_mask.pth'))
-        checkpoints_name = 'epoch_%d_e1_%.7f_iou_%.7f_dice_%.7f' % (epoch, e1, iou, dice)
-        logging.info(f'Saved mask checkpoints {checkpoints_name}.pth!')
+    # if e1 < train_args['best_record']['E1']:
+    #     train_args['best_record']['epoch'] = epoch
+    #     train_args['best_record']['E1'] = e1
+    #     train_args['best_record']['IoU'] = iou
+    #     train_args['best_record']['Dice'] = dice
+    #     if train_args['gpu_ids']:
+    #         torch.save(net.module.state_dict(), os.path.join(checkpoint_path, 'for_mask.pth'))
+    #     else:
+    #         torch.save(net.state_dict(), os.path.join(checkpoint_path, 'for_mask.pth'))
+    #     checkpoints_name = 'epoch_%d_e1_%.7f_iou_%.7f_dice_%.7f' % (epoch, e1, iou, dice)
+    #     logging.info(f'Saved mask checkpoints {checkpoints_name}.pth!')
     
     if iris_e1 < train_args['best_record_outer']['E1']:
         train_args['best_record_outer']['epoch'] = epoch
@@ -340,8 +356,8 @@ if __name__ == '__main__':
     #     'gpu_ids': args.gpu_ids
     # }
     train_args = {
-        'epoch_num': 50,
-        'batch_size': 8,
+        'epoch_num': 1,
+        'batch_size': 2,
         'lr': 0.002,
         'checkpoints': "",  # empty string denotes learning from scratch
         'log_name': "trial",
