@@ -5,6 +5,7 @@ from datetime import datetime
 import argparse
 import zipfile
 from tqdm import tqdm
+from pathlib import Path
 
 from torch.utils.tensorboard import SummaryWriter
 import torch
@@ -50,8 +51,8 @@ def get_args():
     parser.add_argument('--input', default=None)
     parser.add_argument('--input0', default=None)
     parser.add_argument('--input1', default=None)
-    parser.add_argument("--output", default=None)
-    parser.add_argument("--tempDir", default=None) 
+    parser.add_argument("--output", type = Path)
+    parser.add_argument("--tempDir", type=Path) 
     return parser.parse_args()
 
 
@@ -210,8 +211,8 @@ def validate(writer, val_loader, net, criterion, optimizer, epoch, train_args):
     net.eval()
     print('--------------------------------------------------validating...------------------------------------------------')
     # e1, iou, dice = 0, 0, 0
-    iris_e1, iris_dice, iris_iou = 0, 0, 0
-    pupil_e1, pupil_dice, pupil_iou = 0, 0, 0
+    iris_e1, iris_dice, iris_iou, iris_tp, iris_fp, iris_fn = 0, 0, 0, 0, 0, 0
+    pupil_e1, pupil_dice, pupil_iou, pupil_tp, pupil_fp, pupil_fn = 0, 0, 0, 0, 0, 0
     # iris_hsdf, pupil_hsdf = 0, 0 # calculate hausdorff distance takes too long
 
     L = len(val_loader)
@@ -249,12 +250,22 @@ def validate(writer, val_loader, net, criterion, optimizer, epoch, train_args):
         iris_dice += iris_val_results['Dice']/L
         iris_iou += iris_val_results['IoU']/L
 
+        iris_tp += iris_val_results["TP"]/L
+        iris_fp += iris_val_results["FP"]/L
+        iris_fn += iris_val_results["FN"]/L
+
         ################### val for pupil mask #############
         pupil_val_results = evaluate_loc(pred_pupil_mask, pupil_mask)
         pupil_e1 += pupil_val_results['E1']/L
         pupil_dice += pupil_val_results['Dice']/L  
-        pupil_iou += pupil_val_results['IoU']/L
+        pupil_iou += pupil_val_results['IoU']/L  
+        
+        pupil_tp += pupil_val_results["TP"]/L
+        pupil_fp += pupil_val_results["FP"]/L
+        pupil_fn += pupil_val_results["FN"]/L
 
+
+        print(f"tot_val : {L} iris_val : e1 => {iris_e1}, dice => {iris_dice}, iou => {iris_iou}, tp => {iris_tp}, fp => {iris_fp}, fn => {iris_fn}")
              
         #################### val for mask ###################
         # val_results = evaluate_seg(pred_mask, mask, dataset_name)    
@@ -365,6 +376,7 @@ if __name__ == '__main__':
         'gpu_ids': None
     }
 
+
     start_time = datetime.now().strftime("%Y%m%d_%H%M%S")
     check_mkdir('experiments')
     log_path = os.path.join('experiments', experiment_name + '_' + start_time + '_' + train_args['log_name'].split('.')[0])
@@ -376,6 +388,7 @@ if __name__ == '__main__':
         level=logging.INFO,
         format='%(levelname)s: %(message)s'
     )
+    output_folder = args.output / "experiments/"
     
     images_filename = args.input0
     with zipfile.ZipFile(images_filename, "r") as zip_ref:
