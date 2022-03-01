@@ -51,9 +51,9 @@ def get_args():
     parser.add_argument('--input', default=None)
     parser.add_argument('--input0', default=None)
     parser.add_argument('--input1', default=None)
-    parser.add_argument('--debug', default=False, dest="debug", type=bool)
+    parser.add_argument('--debug', default=False, type= bool)
     parser.add_argument("--output", type = Path)
-    parser.add_argument("--tempDir", type=Path) 
+    parser.add_argument("--tempDir", type = Path) 
     return parser.parse_args()
 
 
@@ -363,6 +363,7 @@ def check_mkdir(dir_name):
 if __name__ == '__main__':
     json_root = "./"
     args = get_args() #path to nucdre_images.zip
+    print("debug at root => ", args.debug)
     # train_args = {
     #     'epoch_num': args.epoch_num,
     #     'batch_size': args.batch_size,
