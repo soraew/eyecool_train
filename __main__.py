@@ -1,3 +1,4 @@
+from distutils.log import debug
 from email.policy import default
 import os
 import logging
@@ -50,12 +51,13 @@ def get_args():
     parser.add_argument('--input', default=None)
     parser.add_argument('--input0', default=None)
     parser.add_argument('--input1', default=None)
+    parser.add_argument('--debug', default=False, dest="debug", type=bool)
     parser.add_argument("--output", type = Path)
     parser.add_argument("--tempDir", type=Path) 
     return parser.parse_args()
 
 
-def main(train_args, data_root):
+def main(train_args, data_root, debug):
     ########################################### logging and writer #############################################
     writer = SummaryWriter(log_dir=os.path.join(log_path, 'summarywriter_'+train_args['log_name'].split('.')[0]), comment=train_args['log_name'])
 
@@ -115,8 +117,8 @@ def main(train_args, data_root):
         train_args['best_record_outer'] = {'epoch': 0, 'val_loss': 999, 'E1': 999, 'IoU': 0, 'Dice': 0}
 
         for epoch in range(curr_epoch, train_args['epoch_num'] + 1):
-            train(writer, train_loader, net, criterion, optimizer, epoch, train_args)
-            val_loss = validate(writer, val_loader, net, criterion, optimizer, epoch, train_args)
+            train(writer, train_loader, net, criterion, optimizer, epoch, train_args, debug)
+            val_loss = validate(writer, val_loader, net, criterion, optimizer, epoch, train_args, debug)
             scheduler.step(val_loss)
 
         writer.close()
@@ -144,7 +146,7 @@ def main(train_args, data_root):
             os._exit(0)
 
 
-def train(writer, train_loader, net, criterion, optimizer, epoch, train_args):
+def train(writer, train_loader, net, criterion, optimizer, epoch, train_args, debug):
     logging.info('--------------------------------------------------training...------------------------------------------------')
     iters = len(train_loader)
     curr_iter = (epoch - 1) * iters
@@ -202,11 +204,12 @@ def train(writer, train_loader, net, criterion, optimizer, epoch, train_args):
 
         # added this for debugging(one data point)
         # if i > 1:
-        break
+        if debug:
+            break
 
 
 
-def validate(writer, val_loader, net, criterion, optimizer, epoch, train_args):
+def validate(writer, val_loader, net, criterion, optimizer, epoch, train_args, debug):
     net.eval()
     print('--------------------------------------------------validating...------------------------------------------------')
     # e1, iou, dice = 0, 0, 0
@@ -287,7 +290,8 @@ def validate(writer, val_loader, net, criterion, optimizer, epoch, train_args):
         # pupil_iou += pupil_val_results['IoU']/L
         # pupil_hsdf += pupil_val_results['hsdf']/L
 
-        break
+        if debug:
+            break
         
     logging.info('------------------------------------------------current val result-----------------------------------------------')    
     # logging.info('>mask      epoch:{:2d}   val loss:{:.7f}   E1:{:.7f}   Dice:{:.7f}   IOU:{:.7f}'. \
@@ -400,7 +404,7 @@ if __name__ == '__main__':
         zip_ref.extractall("./")
 
     print("succesfully opened zip files")
-    main(train_args, json_root) # creates logs under experiment/
+    main(train_args, json_root, args.debug) # creates logs under experiment/
 
     # args.output.mkdir()
     output_folder = args.output / "experiments"
