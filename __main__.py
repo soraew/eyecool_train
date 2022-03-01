@@ -3,6 +3,7 @@ import os
 import logging
 from datetime import datetime
 import argparse
+import shutil
 import zipfile
 from tqdm import tqdm
 from pathlib import Path
@@ -22,8 +23,7 @@ sys.path.append('.../NIR-ISL2021master/')
 from datasets import eyeDataset
 from models import EfficientUNet
 from loss import Make_Criterion
-from evaluation import evaluate_loc, evaluate_seg
-from location import get_edge
+from evaluation import evaluate_loc
 
 
 
@@ -266,7 +266,8 @@ def validate(writer, val_loader, net, criterion, optimizer, epoch, train_args):
 
 
         print(f"tot_val : {L} iris_val : e1 => {iris_e1}, dice => {iris_dice}, iou => {iris_iou}, tp => {iris_tp}, fp => {iris_fp}, fn => {iris_fn}")
-             
+
+        break
         #################### val for mask ###################
         # val_results = evaluate_seg(pred_mask, mask, dataset_name)    
         # e1 += val_results['E1']/L
@@ -389,6 +390,7 @@ if __name__ == '__main__':
         format='%(levelname)s: %(message)s'
     )
     output_folder = args.output / "experiments/"
+    shutil.copytree("experiments/", output_folder)
     
     images_filename = args.input0
     with zipfile.ZipFile(images_filename, "r") as zip_ref:
