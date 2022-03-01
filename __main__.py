@@ -113,21 +113,19 @@ def main(train_args, data_root, debug):
     net.train()
     try:
         curr_epoch = 1
-        train_args['best_record'] = {'epoch': 0, 'val_loss': 999, 'E1': 999, 'IoU': 0, 'Dice': 0, 'F1': 0}
         train_args['best_record_inner'] = {'epoch': 0, 'val_loss': 999, 'E1': 999, 'IoU': 0, 'Dice': 0}
         train_args['best_record_outer'] = {'epoch': 0, 'val_loss': 999, 'E1': 999, 'IoU': 0, 'Dice': 0}
 
         for epoch in range(curr_epoch, train_args['epoch_num'] + 1):
+            # train
             train(writer, train_loader, net, criterion, optimizer, epoch, train_args, debug)
+            # validate
             val_loss = validate(writer, val_loader, net, criterion, optimizer, epoch, train_args, debug)
+            # step scheduler
             scheduler.step(val_loss)
 
         writer.close()
         logging.info('-------------------------------------------------best record------------------------------------------------')
-        logging.info('mask    epoch:{}   val loss {:.5f}  E1:{:.5f}   IoU:{:.5f}   Dice:{:.5f}  F1:{:.5f}'.format(
-            train_args['best_record']['epoch'], train_args['best_record']['val_loss'], train_args['best_record']['E1'],
-            train_args['best_record']['IoU'], train_args['best_record']['Dice'], train_args['best_record']['F1']
-            ))
         logging.info('outer   epoch:{}  val loss {:.5f}  E1:{:.5f}   IoU:{:.5f}   Dice:{:.5f}'.format(
             train_args['best_record_outer']['epoch'], train_args['best_record_outer']['val_loss'], train_args['best_record_outer']['E1'],
             train_args['best_record_outer']['IoU'], train_args['best_record_outer']['Dice']
@@ -268,31 +266,9 @@ def validate(writer, val_loader, net, criterion, optimizer, epoch, train_args, d
         pupil_fn += pupil_val_results["FN"]/L
 
 
-        print(f"tot_val : {L} iris_val : e1 => {iris_e1}, dice => {iris_dice}, iou => {iris_iou}, tp => {iris_tp}, fp => {iris_fp}, fn => {iris_fn}")
-
-
-        #################### val for mask ###################
-        # val_results = evaluate_seg(pred_mask, mask, dataset_name)    
-        # e1 += val_results['E1']/L
-        # iou += val_results['IoU']/L
-        # dice += val_results['Dice']/L
-
-        #################### val for outer edge ##################
-        # iris_val_results = evaluate_loc(pred_iris_circle_mask, iris_mask, pred_iris_edge, iris_edge, dataset_name)
-        # iris_e1 += iris_val_results['E1']/L
-        # iris_dice += iris_val_results['Dice']/L
-        # iris_iou += iris_val_results['IoU']/L
-        # iris_hsdf += iris_val_results['hsdf']/L
-
-        #################### val for inner edge ##################
-        # pupil_val_results = evaluate_loc(pred_pupil_circle_mask, pupil_mask, pred_pupil_egde, pupil_edge, dataset_name)
-        # pupil_e1 += pupil_val_results['E1']/L
-        # pupil_dice += pupil_val_results['Dice']/L  
-        # pupil_iou += pupil_val_results['IoU']/L
-        # pupil_hsdf += pupil_val_results['hsdf']/L
-
         if debug:
             break
+    print(f"Validation >>> tot_val_nums : {L} iris_val : e1 => {iris_e1}, dice => {iris_dice}, iou => {iris_iou}, tp => {iris_tp}, fp => {iris_fp}, fn => {iris_fn}")
         
     logging.info('------------------------------------------------current val result-----------------------------------------------')    
     # logging.info('>mask      epoch:{:2d}   val loss:{:.7f}   E1:{:.7f}   Dice:{:.7f}   IOU:{:.7f}'. \
