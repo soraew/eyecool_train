@@ -52,6 +52,7 @@ def get_args():
     parser.add_argument('--input0', default=None)
     parser.add_argument('--input1', default=None)
     parser.add_argument('--debug', default=False, type= bool)
+    parser.add_argument('--epochs', default=False, type=int)
     parser.add_argument("--output", type = Path)
     parser.add_argument("--tempDir", type = Path) 
     return parser.parse_args()
@@ -363,7 +364,7 @@ def check_mkdir(dir_name):
 if __name__ == '__main__':
     json_root = "./"
     args = get_args() #path to nucdre_images.zip
-    print("debug at root => ", args.debug)
+    print("debug => ", args.debug)
     # train_args = {
     #     'epoch_num': args.epoch_num,
     #     'batch_size': args.batch_size,
@@ -374,7 +375,7 @@ if __name__ == '__main__':
     #     'gpu_ids': args.gpu_ids
     # }
     train_args = {
-        'epoch_num': 5,
+        'epoch_num': args.epochs,
         'batch_size': 8,
         'lr': 0.002,
         'checkpoints': "",  # empty string denotes learning from scratch
@@ -382,7 +383,7 @@ if __name__ == '__main__':
         'print_freq': 1000,
         'gpu_ids': None
     }
-
+    print("epochs => ", args.epochs)
 
     start_time = datetime.now().strftime("%Y%m%d_%H%M%S")
     check_mkdir('experiments')
