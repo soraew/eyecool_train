@@ -1,0 +1,11 @@
+*.jpg
+*.png
+*.ipynb
+*.zip
+.DS_Store/
+__pycache__/
+jsons/
+submission_1-checkpoints/
+nucdre_images_04/
+test-result/
+soraw@192.168.87.213/
