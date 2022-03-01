@@ -175,6 +175,7 @@ def train(writer, train_loader, net, criterion, optimizer, epoch, train_args, de
         loss_iris = criterion(pred_iris_mask, iris_mask)
         loss_pupil = criterion(pred_pupil_mask, pupil_mask)
 
+        ################## heatmaps (we can output this later, maybe?) ##################
         # heatmap0 = transforms.Resize((pred_heatmap[0].size()[2:]))(heatmap)
         # heatmap1 = transforms.Resize((pred_heatmap[1].size()[2:]))(heatmap)
         # heatmap2 = transforms.Resize((pred_heatmap[2].size()[2:]))(heatmap)
@@ -280,18 +281,28 @@ def validate(writer, val_loader, net, criterion, optimizer, epoch, train_args, d
     logging.info(f"epoch {epoch} iris >>> e1 => {iris_e1}, dice => {iris_dice}, iou => {iris_iou}, tp => {iris_tp}, fp => {iris_fp}, fn => {iris_fn}")
     logging.info(f"epoch {epoch} pupil >>> e1 => {pupil_e1}, dice => {pupil_dice}, iou => {pupil_iou}, tp => {pupil_tp}, fp => {pupil_fp}, fn => {pupil_fn}")
     
+
+    ######################## adding scalars for log(summary writer) #########################
     writer.add_scalar('val_loss', val_loss, epoch)
-    # writer.add_scalar('e1_val', e1, epoch)
-    # writer.add_scalar('iou_val', iou, epoch)
-    # writer.add_scalar('dice_val', dice, epoch)
+
+    writer.add_scalar('iris_e1', iris_e1, epoch)
+    writer.add_scalar('iris_dice', iris_dice, epoch)
+    writer.add_scalar('iris_iou', iris_iou, epoch)
+
+    writer.add_scalar('pupil_e1', pupil_e1, epoch)
+    writer.add_scalar('pupil_dice', pupil_dice, epoch)
+    writer.add_scalar('pupil_iou', pupil_iou, epoch)
+
     writer.add_scalar('lr', optimizer.param_groups[1]['lr'], epoch)
 
+    ###################### adding images to summary writer ###########################
     writer.add_images('image', image, epoch)
     writer.add_images('iris_mask', iris_mask, epoch)
     writer.add_images('pred_iris_mask', pred_iris_mask>0, epoch)
     writer.add_images('pupil_mask', pupil_mask, epoch)
     writer.add_images('pred_pupil_mask', pred_pupil_mask>0, epoch)
     
+    ###################### getting best results for pupil(inner), iris(outer), respectively ###############
     if iris_e1 < train_args['best_record_outer']['E1']:
         train_args['best_record_outer']['epoch'] = epoch
         train_args['best_record_outer']['E1'] = iris_e1
@@ -315,6 +326,7 @@ def validate(writer, val_loader, net, criterion, optimizer, epoch, train_args, d
             torch.save(net.state_dict(), os.path.join(checkpoint_path, 'for_mask.pth'))
         inner_checkpoints_name = 'epoch_%d_e1_%.7f_iou_%.7f_dice_%.7f' % (epoch, pupil_e1, pupil_iou, pupil_dice)
         logging.info(f'Saved pupil checkpoints {inner_checkpoints_name}.pth!')
+
 
     net.train()
     return val_loss
