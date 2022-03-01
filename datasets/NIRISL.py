@@ -9,7 +9,7 @@ from PIL import Image
 import numpy as np
 import torchvision.transforms as transforms
 from torch.utils.data import Dataset
-import matplotlib.pyplot as plt
+
 
 
 # root = '.../NIRISL-dataset/' # change this as you need
