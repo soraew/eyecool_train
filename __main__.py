@@ -268,15 +268,17 @@ def validate(writer, val_loader, net, criterion, optimizer, epoch, train_args, d
 
         if debug:
             break
-    print(f"Validation >>> tot_val_nums : {L} iris_val : e1 => {iris_e1}, dice => {iris_dice}, iou => {iris_iou}, tp => {iris_tp}, fp => {iris_fp}, fn => {iris_fn}")
+        
+    print(f"Validation iris >>> tot_val_nums : {L} iris_val : e1 => {iris_e1}, dice => {iris_dice}, iou => {iris_iou}, tp => {iris_tp}, fp => {iris_fp}, fn => {iris_fn}")
+    print(f"Validation pupil >>> tot_val_nums : {L} pupil_val : e1 => {pupil_e1}, dice => {pupil_dice}, iou => {pupil_iou}, tp => {pupil_tp}, fp => {pupil_fp}, fn => {pupil_fn}")
         
     logging.info('------------------------------------------------current val result-----------------------------------------------')    
-    # logging.info('>mask      epoch:{:2d}   val loss:{:.7f}   E1:{:.7f}   Dice:{:.7f}   IOU:{:.7f}'. \
-        # format(epoch, loss_mask, e1, dice, iou))
-    logging.info('>iris      epoch:{:2d}   val loss:{:.7f}   E1:{:.7}    Dice:{:.7f}   IOU:{:.7f}'. \
-        format(epoch, loss_iris, iris_e1, iris_dice, iris_iou))
-    logging.info('>pupil     epoch:{:2d}   val loss:{:.7f}   E1:{:.7}    Dice:{:.7f}   IOU:{:.7f}'. \
-        format(epoch, loss_pupil, pupil_e1, pupil_dice, pupil_iou))
+    # logging.info('>iris      epoch:{:2d}   val loss:{:.7f}   E1:{:.7}    Dice:{:.7f}   IOU:{:.7f}'. \
+    #     format(epoch, loss_iris, iris_e1, iris_dice, iris_iou))
+    # logging.info('>pupil     epoch:{:2d}   val loss:{:.7f}   E1:{:.7}    Dice:{:.7f}   IOU:{:.7f}'. \
+    #     format(epoch, loss_pupil, pupil_e1, pupil_dice, pupil_iou))
+    logging.info(f"epoch {epoch} iris >>> e1 => {iris_e1}, dice => {iris_dice}, iou => {iris_iou}, tp => {iris_tp}, fp => {iris_fp}, fn => {iris_fn}")
+    logging.info(f"epoch {epoch} pupil >>> e1 => {pupil_e1}, dice => {pupil_dice}, iou => {pupil_iou}, tp => {pupil_tp}, fp => {pupil_fp}, fn => {pupil_fn}")
     
     writer.add_scalar('val_loss', val_loss, epoch)
     # writer.add_scalar('e1_val', e1, epoch)
@@ -285,24 +287,10 @@ def validate(writer, val_loader, net, criterion, optimizer, epoch, train_args, d
     writer.add_scalar('lr', optimizer.param_groups[1]['lr'], epoch)
 
     writer.add_images('image', image, epoch)
-    # writer.add_images('mask', mask, epoch)
-    # writer.add_images('pred_mask', pred_mask>0, epoch)
     writer.add_images('iris_mask', iris_mask, epoch)
     writer.add_images('pred_iris_mask', pred_iris_mask>0, epoch)
     writer.add_images('pupil_mask', pupil_mask, epoch)
     writer.add_images('pred_pupil_mask', pred_pupil_mask>0, epoch)
-
-    # if e1 < train_args['best_record']['E1']:
-    #     train_args['best_record']['epoch'] = epoch
-    #     train_args['best_record']['E1'] = e1
-    #     train_args['best_record']['IoU'] = iou
-    #     train_args['best_record']['Dice'] = dice
-    #     if train_args['gpu_ids']:
-    #         torch.save(net.module.state_dict(), os.path.join(checkpoint_path, 'for_mask.pth'))
-    #     else:
-    #         torch.save(net.state_dict(), os.path.join(checkpoint_path, 'for_mask.pth'))
-    #     checkpoints_name = 'epoch_%d_e1_%.7f_iou_%.7f_dice_%.7f' % (epoch, e1, iou, dice)
-    #     logging.info(f'Saved mask checkpoints {checkpoints_name}.pth!')
     
     if iris_e1 < train_args['best_record_outer']['E1']:
         train_args['best_record_outer']['epoch'] = epoch
