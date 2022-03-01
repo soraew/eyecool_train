@@ -202,8 +202,8 @@ def train(writer, train_loader, net, criterion, optimizer, epoch, train_args):
         curr_iter += 1
 
         # added this for debugging(one data point)
-        if i > 1:
-            break
+        # if i > 1:
+        #     break
 
 
 
@@ -267,7 +267,7 @@ def validate(writer, val_loader, net, criterion, optimizer, epoch, train_args):
 
         print(f"tot_val : {L} iris_val : e1 => {iris_e1}, dice => {iris_dice}, iou => {iris_iou}, tp => {iris_tp}, fp => {iris_fp}, fn => {iris_fn}")
 
-        break
+
         #################### val for mask ###################
         # val_results = evaluate_seg(pred_mask, mask, dataset_name)    
         # e1 += val_results['E1']/L
@@ -369,11 +369,11 @@ if __name__ == '__main__':
     # }
     train_args = {
         'epoch_num': 1,
-        'batch_size': 1,
+        'batch_size': 8,
         'lr': 0.002,
         'checkpoints': "",  # empty string denotes learning from scratch
         'log_name': "trial.log",
-        'print_freq': 100,
+        'print_freq': 1000,
         'gpu_ids': None
     }
 
