@@ -374,8 +374,8 @@ if __name__ == '__main__':
     #     'gpu_ids': args.gpu_ids
     # }
     train_args = {
-        'epoch_num': 1,
-        'batch_size': 2,
+        'epoch_num': 5,
+        'batch_size': 8,
         'lr': 0.002,
         'checkpoints': "",  # empty string denotes learning from scratch
         'log_name': "trial.log",
