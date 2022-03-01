@@ -5,7 +5,6 @@ from datetime import datetime
 import argparse
 import shutil
 import zipfile
-from tqdm import tqdm
 from pathlib import Path
 
 from torch.utils.tensorboard import SummaryWriter
@@ -150,7 +149,7 @@ def train(writer, train_loader, net, criterion, optimizer, epoch, train_args):
     iters = len(train_loader)
     curr_iter = (epoch - 1) * iters
     print('--------------------------------------------------training...------------------------------------------------')
-    for i, data in tqdm(enumerate(train_loader)):
+    for i, data in enumerate(train_loader):
         # print("data enumerated : ", i)
         image, iris_mask, pupil_mask = \
             data['image'], data['iris_mask'], data['pupil_mask'] #BCHW
@@ -194,8 +193,8 @@ def train(writer, train_loader, net, criterion, optimizer, epoch, train_args):
 
         if (i + 1) % train_args['print_freq'] == 0:
             # removed losses that we don't need
-            print('epoch:{:2d}  iter/iters:{:3d}/{:3d} iter%{:.3f} train_loss:{:.9f}   loss_iris:{:.9}   loss_pupil:{:.9}'.format(
-                epoch, i+1, iters, i+1/iters, loss, loss_iris, loss_pupil))
+            print('epoch:{:2d}  iter/iters:{:3d}/{:3d} iter%{:.5f} train_loss:{:.9f}   loss_iris:{:.9}   loss_pupil:{:.9}'.format(
+                epoch, i+1, iters, (float(i+1)/float(iters)), loss, loss_iris, loss_pupil))
             logging.info('epoch:{:2d}  iter/iters:{:3d}/{:3d}  train_loss:{:.9f}  loss_iris:{:.9}   loss_pupil:{:.9}'.format(
                 epoch, i+1, iters, loss, loss_iris, loss_pupil))
 
@@ -203,7 +202,7 @@ def train(writer, train_loader, net, criterion, optimizer, epoch, train_args):
 
         # added this for debugging(one data point)
         # if i > 1:
-        #     break
+        break
 
 
 
@@ -287,6 +286,8 @@ def validate(writer, val_loader, net, criterion, optimizer, epoch, train_args):
         # pupil_dice += pupil_val_results['Dice']/L  
         # pupil_iou += pupil_val_results['IoU']/L
         # pupil_hsdf += pupil_val_results['hsdf']/L
+
+        break
         
     logging.info('------------------------------------------------current val result-----------------------------------------------')    
     # logging.info('>mask      epoch:{:2d}   val loss:{:.7f}   E1:{:.7f}   Dice:{:.7f}   IOU:{:.7f}'. \
@@ -369,7 +370,7 @@ if __name__ == '__main__':
     # }
     train_args = {
         'epoch_num': 1,
-        'batch_size': 8,
+        'batch_size': 2,
         'lr': 0.002,
         'checkpoints': "",  # empty string denotes learning from scratch
         'log_name': "trial.log",
@@ -389,8 +390,6 @@ if __name__ == '__main__':
         level=logging.INFO,
         format='%(levelname)s: %(message)s'
     )
-    output_folder = args.output / "experiments/"
-    shutil.copytree("experiments/", output_folder)
     
     images_filename = args.input0
     with zipfile.ZipFile(images_filename, "r") as zip_ref:
@@ -401,4 +400,8 @@ if __name__ == '__main__':
         zip_ref.extractall("./")
 
     print("succesfully opened zip files")
-    main(train_args, json_root)
+    main(train_args, json_root) # creates logs under experiment/
+
+    # args.output.mkdir()
+    output_folder = args.output / "experiments"
+    shutil.copytree("experiments/", output_folder)
