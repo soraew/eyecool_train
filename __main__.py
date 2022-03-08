@@ -4,6 +4,7 @@ import os
 import logging
 from datetime import datetime
 import argparse
+from pickletools import optimize
 import shutil
 from tkinter.messagebox import NO
 import zipfile
@@ -307,7 +308,7 @@ def validate(writer, val_loader, net, criterion, optimizer, epoch, train_args, d
     writer.add_images('pupil_mask', pupil_mask, epoch)
     writer.add_images('pred_pupil_mask', pred_pupil_mask>0, epoch)
     
-    ###################### getting best results for pupil(inner), iris(outer), respectively ###############
+    ###################### getting best results for pupil(inner), iris(outer), respectively and saving them ###############
     if iris_e1 < train_args['best_record_outer']['E1']:
         train_args['best_record_outer']['epoch'] = epoch
         train_args['best_record_outer']['E1'] = iris_e1
@@ -315,8 +316,10 @@ def validate(writer, val_loader, net, criterion, optimizer, epoch, train_args, d
         train_args['best_record_outer']['Dice'] = iris_dice
         if train_args['gpu_ids']:
             torch.save(net.module.state_dict(), os.path.join(checkpoint_path, 'for_outer.pth'))
+            torch.save(optimizer.state_dict(), os.path.join(checkpoint_path, 'optimizer_outer.pt'))
         else:
-            torch.save(net.state_dict(), os.path.join(checkpoint_path, 'for_outer.pth'))
+            torch.save(net.state_dict(), os.path.join(checkpoint_path, 'for_outer.pth')) 
+            torch.save(optimizer.state_dict(), os.path.join(checkpoint_path, 'optimizer_inner.pt'))
         outer_checkpoints_name = 'epoch_%d_e1_%.7f_iou_%.7f_dice_%.7f' % (epoch, iris_e1, iris_iou, iris_dice)
         logging.info(f'Saved iris checkpoints {outer_checkpoints_name}.pth!')
 
@@ -328,7 +331,7 @@ def validate(writer, val_loader, net, criterion, optimizer, epoch, train_args, d
         if train_args['gpu_ids']:
             torch.save(net.module.state_dict(), os.path.join(checkpoint_path, 'for_inner.pth'))
         else:
-            torch.save(net.state_dict(), os.path.join(checkpoint_path, 'for_innerpth'))
+            torch.save(net.state_dict(), os.path.join(checkpoint_path, 'for_inner.pth'))
         inner_checkpoints_name = 'epoch_%d_e1_%.7f_iou_%.7f_dice_%.7f' % (epoch, pupil_e1, pupil_iou, pupil_dice)
         logging.info(f'Saved pupil checkpoints {inner_checkpoints_name}.pth!')
 
