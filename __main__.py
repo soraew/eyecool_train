@@ -5,6 +5,7 @@ import logging
 from datetime import datetime
 import argparse
 import shutil
+from tkinter.messagebox import NO
 import zipfile
 from pathlib import Path
 
@@ -53,6 +54,7 @@ def get_args():
     parser.add_argument('--input1', default=None)
     parser.add_argument('--debug', default=False, type= bool)
     parser.add_argument('--epochs', default=False, type=int)
+    parser.add_argument('--batchsize', default=8, type=int)
     parser.add_argument("--output", type = Path)
     parser.add_argument("--tempDir", type = Path) 
     return parser.parse_args()
@@ -163,12 +165,13 @@ def train(writer, train_loader, net, criterion, optimizer, epoch, train_args, de
         pupil_mask = Variable(pupil_mask).to(device)
         # heatmap = Variable(heatmap).to(device)
 
+        # we call zero_grad for every mini-batch
         optimizer.zero_grad()
         # print("size of image : ", image.shape)
         outputs = net(image) # Non-empty 4D data tensor expected but got a tensor with sizes [1, 0, 276, 276]
         # deleted pred_mask, pred_heatmap
-        pred_iris_mask, pred_pupil_mask = \
-            outputs['pred_iris_mask'], outputs['pred_pupil_mask']
+        pred_iris_mask, pred_pupil_mask, pred_heatmap = \
+            outputs['pred_iris_mask'], outputs['pred_pupil_mask'], outputs['heatmap']
     
 
         # loss_mask = criterion(pred_mask, mask)
@@ -180,7 +183,9 @@ def train(writer, train_loader, net, criterion, optimizer, epoch, train_args, de
         # heatmap1 = transforms.Resize((pred_heatmap[1].size()[2:]))(heatmap)
         # heatmap2 = transforms.Resize((pred_heatmap[2].size()[2:]))(heatmap)
         # loss_heatmap = heatmap_criteria(pred_heatmap[0], heatmap0) + heatmap_criteria(pred_heatmap[1], heatmap1) + heatmap_criteria(pred_heatmap[2], heatmap2)
-
+        print("shape of heatmap0 >> ", pred_heatmap[0].shape)
+        print("shape of heatmap1 >> ", pred_heatmap[1].shape)
+        print("shape of heatmap2 >> ", pred_heatmap[2].shape)
         # loss = loss_mask + loss_iris + 2*loss_pupil + 0.3*loss_heatmap
         loss = loss_iris + 2*loss_pupil 
 
@@ -309,9 +314,9 @@ def validate(writer, val_loader, net, criterion, optimizer, epoch, train_args, d
         train_args['best_record_outer']['IoU'] = iris_iou
         train_args['best_record_outer']['Dice'] = iris_dice
         if train_args['gpu_ids']:
-            torch.save(net.module.state_dict(), os.path.join(checkpoint_path, 'for_mask.pth'))
+            torch.save(net.module.state_dict(), os.path.join(checkpoint_path, 'for_outer.pth'))
         else:
-            torch.save(net.state_dict(), os.path.join(checkpoint_path, 'for_mask.pth'))
+            torch.save(net.state_dict(), os.path.join(checkpoint_path, 'for_outer.pth'))
         outer_checkpoints_name = 'epoch_%d_e1_%.7f_iou_%.7f_dice_%.7f' % (epoch, iris_e1, iris_iou, iris_dice)
         logging.info(f'Saved iris checkpoints {outer_checkpoints_name}.pth!')
 
@@ -321,9 +326,9 @@ def validate(writer, val_loader, net, criterion, optimizer, epoch, train_args, d
         train_args['best_record_inner']['IoU'] = pupil_iou
         train_args['best_record_inner']['Dice'] = pupil_dice
         if train_args['gpu_ids']:
-            torch.save(net.module.state_dict(), os.path.join(checkpoint_path, 'for_mask.pth'))
+            torch.save(net.module.state_dict(), os.path.join(checkpoint_path, 'for_inner.pth'))
         else:
-            torch.save(net.state_dict(), os.path.join(checkpoint_path, 'for_mask.pth'))
+            torch.save(net.state_dict(), os.path.join(checkpoint_path, 'for_innerpth'))
         inner_checkpoints_name = 'epoch_%d_e1_%.7f_iou_%.7f_dice_%.7f' % (epoch, pupil_e1, pupil_iou, pupil_dice)
         logging.info(f'Saved pupil checkpoints {inner_checkpoints_name}.pth!')
 
@@ -352,14 +357,14 @@ if __name__ == '__main__':
     # }
     train_args = {
         'epoch_num': args.epochs,
-        'batch_size': 8,
+        'batch_size': args.batchsize,
         'lr': 0.002,
         'checkpoints': "",  # empty string denotes learning from scratch
         'log_name': "trial.log",
         'print_freq': 1000,
         'gpu_ids': None
     }
-    print("epochs => ", args.epochs)
+    print("args => ", train_args)
 
     start_time = datetime.now().strftime("%Y%m%d_%H%M%S")
     check_mkdir('experiments')
