@@ -227,6 +227,9 @@ def validate(writer, val_loader, net, criterion, optimizer, epoch, train_args, d
     # iris_hsdf, pupil_hsdf = 0, 0 # calculate hausdorff distance takes too long
 
     L = len(val_loader) # len(dataloader) = num_batches
+    val_loss_ = 0
+    val_loss_pupil = 0
+    val_loss_iris = 0
     for data in val_loader:
         ###################################################################################################################################################
         ############ removed edge and heatmap data ##########
@@ -252,8 +255,11 @@ def validate(writer, val_loader, net, criterion, optimizer, epoch, train_args, d
 
         # loss_mask = criterion(pred_mask, mask)
         loss_iris = criterion(pred_iris_mask, iris_mask)
+        val_loss_iris += loss_iris
         loss_pupil = criterion(pred_pupil_mask, pupil_mask)
+        val_loss_pupil += loss_pupil
         val_loss = loss_iris + loss_pupil        
+        val_loss_ += (loss_iris + 2*loss_pupil)
 
         # pred_iris_circle_mask, pred_iris_edge, _ = get_edge(pred_iris_mask)
         # pred_pupil_circle_mask, pred_pupil_egde, _ = get_edge(pred_pupil_mask) 
@@ -281,7 +287,9 @@ def validate(writer, val_loader, net, criterion, optimizer, epoch, train_args, d
 
         if debug:
             break
-        
+    val_loss_ /= L
+    val_loss_iris /= L
+    val_loss_pupil /= L
     print(f"Validation iris >>> tot_val_nums : {L} iris_val : e1 => {iris_e1}, dice => {iris_dice}, iou => {iris_iou}, tp => {iris_tp}, fp => {iris_fp}, fn => {iris_fn}")
     print(f"Validation pupil >>> tot_val_nums : {L} pupil_val : e1 => {pupil_e1}, dice => {pupil_dice}, iou => {pupil_iou}, tp => {pupil_tp}, fp => {pupil_fp}, fn => {pupil_fn}")
         
@@ -295,7 +303,9 @@ def validate(writer, val_loader, net, criterion, optimizer, epoch, train_args, d
     
 
     ######################## adding scalars for log(summary writer) #########################
-    writer.add_scalar('val_loss', val_loss, epoch)
+    writer.add_scalar('val_loss', val_loss_, epoch) # changed this from val_loss
+    writer.add_scalar('val_loss_iris/iters', val_loss_iris, epoch)
+    writer.add_scalar('val_loss_pupil/iters', val_loss_pupil, epoch)
 
     writer.add_scalar('iris_e1', iris_e1, epoch)
     writer.add_scalar('iris_dice', iris_dice, epoch)
