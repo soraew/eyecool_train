@@ -45,6 +45,8 @@ def compute_tfpns(n_batch, pred_masks, true_masks):
     # return tp_sum/n_batch, fp_sum/n_batch, fn_sum/n_batch
 
     # return in total pixels
+
+    # print(f"in compute tfpns, tp => {tp_sum}, fp => {fp_sum}")
     return tp_sum, fp_sum, fn_sum
 
 
