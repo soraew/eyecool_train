@@ -51,11 +51,11 @@ def get_args():
     # parser.add_argument('--ckp', type=str, default=None, help='load a pertrain model from .../xxx.pth', dest='checkpoints')
     # parser.add_argument('--gpu-ids', type=int, nargs='*', help='use cuda', dest='gpu_ids')
     parser.add_argument('--input', default=None)
-    parser.add_argument('--input0', default=None)
-    parser.add_argument('--input1', default=None)
-    parser.add_argument('--debug', default=False, type= bool)
-    parser.add_argument('--epochs', default=False, type=int)
-    parser.add_argument('--batchsize', default=8, type=int)
+    parser.add_argument('--input0', default=None) # this should be nucdre_zip
+    parser.add_argument('--input1', default=None) # this should be jsons_zip
+    parser.add_argument('--debug', default=False, type= bool) 
+    parser.add_argument('--epochs', default=False, type=int) # 10 for on ahub
+    parser.add_argument('--batchsize', default=8, type=int) # 2 for on mac, 8 for on ahub
     parser.add_argument("--output", type = Path)
     parser.add_argument("--tempDir", type = Path) 
     return parser.parse_args()
@@ -166,8 +166,9 @@ def train(writer, train_loader, net, criterion, optimizer, epoch, train_args, de
         pupil_mask = Variable(pupil_mask).to(device)
         # heatmap = Variable(heatmap).to(device)
 
-        # we call zero_grad for every mini-batch
+        # WE CALL ZERO_GRAD FOR EVERY MINI-BATCH, BECAUSE PYTOCH ACCUMULATES GRADIENTS BY DEFAULT
         optimizer.zero_grad()
+
         # print("size of image : ", image.shape)
         outputs = net(image) # Non-empty 4D data tensor expected but got a tensor with sizes [1, 0, 276, 276]
         # deleted pred_mask, pred_heatmap
@@ -184,9 +185,11 @@ def train(writer, train_loader, net, criterion, optimizer, epoch, train_args, de
         # heatmap1 = transforms.Resize((pred_heatmap[1].size()[2:]))(heatmap)
         # heatmap2 = transforms.Resize((pred_heatmap[2].size()[2:]))(heatmap)
         # loss_heatmap = heatmap_criteria(pred_heatmap[0], heatmap0) + heatmap_criteria(pred_heatmap[1], heatmap1) + heatmap_criteria(pred_heatmap[2], heatmap2)
-        print("shape of heatmap0 >> ", pred_heatmap[0].shape)
-        print("shape of heatmap1 >> ", pred_heatmap[1].shape)
-        print("shape of heatmap2 >> ", pred_heatmap[2].shape)
+        
+        # I would like to plot some images and heatmaps 
+        # print("shape of heatmap0 >> ", pred_heatmap[0].shape)
+        # print("shape of heatmap1 >> ", pred_heatmap[1].shape)
+        # print("shape of heatmap2 >> ", pred_heatmap[2].shape)
         # loss = loss_mask + loss_iris + 2*loss_pupil + 0.3*loss_heatmap
         loss = loss_iris + 2*loss_pupil 
 
@@ -223,13 +226,16 @@ def validate(writer, val_loader, net, criterion, optimizer, epoch, train_args, d
     pupil_e1, pupil_dice, pupil_iou, pupil_tp, pupil_fp, pupil_fn = 0, 0, 0, 0, 0, 0
     # iris_hsdf, pupil_hsdf = 0, 0 # calculate hausdorff distance takes too long
 
-    L = len(val_loader)
+    L = len(val_loader) # len(dataloader) = num_batches
     for data in val_loader:
         ###################################################################################################################################################
-        ############ we must change this cause we don't have edge data to train ##########
+        ############ removed edge and heatmap data ##########
         ###################################################################################################################################################
         image, iris_mask, pupil_mask = \
             data['image'], data['iris_mask'], data['pupil_mask']
+
+        # print(f"shape of each in validate: \n\
+        #        image >> {image.shape}, iris_mask >> {iris_mask.shape}, pupil_mask >> {pupil_mask}")
    
         image = Variable(image).to(device)
         # mask = Variable(mask).to(device)
@@ -254,23 +260,23 @@ def validate(writer, val_loader, net, criterion, optimizer, epoch, train_args, d
 
         #################### val for iris mask ##############
         iris_val_results = evaluate_loc(pred_iris_mask, iris_mask)  
-        iris_e1 += iris_val_results["E1"]/L
-        iris_dice += iris_val_results['Dice']/L
-        iris_iou += iris_val_results['IoU']/L
+        iris_e1 += iris_val_results["E1"]#/L
+        iris_dice += iris_val_results['Dice']#/L
+        iris_iou += iris_val_results['IoU']#/L
 
-        iris_tp += iris_val_results["TP"]/L
-        iris_fp += iris_val_results["FP"]/L
-        iris_fn += iris_val_results["FN"]/L
+        iris_tp += iris_val_results["TP"]#/L
+        iris_fp += iris_val_results["FP"]#/L
+        iris_fn += iris_val_results["FN"]#/L
 
         ################### val for pupil mask #############
         pupil_val_results = evaluate_loc(pred_pupil_mask, pupil_mask)
-        pupil_e1 += pupil_val_results['E1']/L
-        pupil_dice += pupil_val_results['Dice']/L  
-        pupil_iou += pupil_val_results['IoU']/L  
+        pupil_e1 += pupil_val_results['E1']#/L
+        pupil_dice += pupil_val_results['Dice']#/L  
+        pupil_iou += pupil_val_results['IoU']#/L  
         
-        pupil_tp += pupil_val_results["TP"]/L
-        pupil_fp += pupil_val_results["FP"]/L
-        pupil_fn += pupil_val_results["FN"]/L
+        pupil_tp += pupil_val_results["TP"]#/L
+        pupil_fp += pupil_val_results["FP"]#/L
+        pupil_fn += pupil_val_results["FN"]#/L
 
 
         if debug:
@@ -307,6 +313,7 @@ def validate(writer, val_loader, net, criterion, optimizer, epoch, train_args, d
     writer.add_images('pred_iris_mask', pred_iris_mask>0, epoch)
     writer.add_images('pupil_mask', pupil_mask, epoch)
     writer.add_images('pred_pupil_mask', pred_pupil_mask>0, epoch)
+    # writer.add_images('heatmap0', )
     
     ###################### getting best results for pupil(inner), iris(outer), respectively and saving them ###############
     if iris_e1 < train_args['best_record_outer']['E1']:
