@@ -103,19 +103,22 @@ def compute_f1(n_batch, pred_masks, true_masks):
     for i in range(n_batch):
         tfpn = compute_tfpn(pred_masks[i], true_masks[i])
         tp, fp, fn = tfpn['TP'], tfpn['FP'], tfpn['FN']
-        if tp+fp == 0:
-            precision = tp
-        else:
-            precision = tp / (tp+fp)
+        
+        # if tp+fp == 0:
+        #     precision = tp
+        # else:
+        #     precision = tp / (tp+fp)
+        precision = tp / (tp+fp)
         recall = tp / (tp+fn)
-
         recall_sum += recall
         precision_sum += precision
 
-        if precision+recall == 0:
-            f1 = tp
-        else:
-            f1 = (2*precision*recall) / (precision+recall)
+        # if precision+recall == 0:
+            # f1 = tp
+        # else:
+            # f1 = (2*precision*recall) / (precision+recall)
+        f1 = (2*precision*recall) / (precision+recall)
+
         if f1 > 999:
             f1 = 0
         sum_f1 += f1
