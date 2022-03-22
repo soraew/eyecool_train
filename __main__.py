@@ -223,6 +223,7 @@ def validate(writer, val_loader, net, criterion, optimizer, epoch, train_args, d
     print('--------------------------------------------------validating...------------------------------------------------')
     # e1, iou, dice = 0, 0, 0
     iris_e1, iris_dice, iris_iou, iris_tp, iris_fp, iris_fn = 0, 0, 0, 0, 0, 0
+    iris_recall, iris_precision, pupil_recall, pupil_precision = 0, 0, 0, 0
     pupil_e1, pupil_dice, pupil_iou, pupil_tp, pupil_fp, pupil_fn = 0, 0, 0, 0, 0, 0
     # iris_hsdf, pupil_hsdf = 0, 0 # calculate hausdorff distance takes too long
 
@@ -266,40 +267,47 @@ def validate(writer, val_loader, net, criterion, optimizer, epoch, train_args, d
 
         #################### val for iris mask ##############
         iris_val_results = evaluate_loc(pred_iris_mask, iris_mask)  
-        iris_e1 += iris_val_results["E1"]#/L
-        iris_dice += iris_val_results['Dice']#/L
-        iris_iou += iris_val_results['IoU']#/L
+        iris_e1 += iris_val_results["E1"]/L
+        iris_dice += iris_val_results['Dice']/L
+        iris_iou += iris_val_results['IoU']/L
 
         iris_tp += iris_val_results["TP"]#/L
         iris_fp += iris_val_results["FP"]#/L
         iris_fn += iris_val_results["FN"]#/L
 
+        iris_recall += iris_val_results["recall"]/L
+        iris_precision += iris_val_results["precision"]/L
+
         ################### val for pupil mask #############
         pupil_val_results = evaluate_loc(pred_pupil_mask, pupil_mask)
-        pupil_e1 += pupil_val_results['E1']#/L
-        pupil_dice += pupil_val_results['Dice']#/L  
-        pupil_iou += pupil_val_results['IoU']#/L  
+        pupil_e1 += pupil_val_results['E1']/L
+        pupil_dice += pupil_val_results['Dice']/L  
+        pupil_iou += pupil_val_results['IoU']/L  
         
         pupil_tp += pupil_val_results["TP"]#/L
         pupil_fp += pupil_val_results["FP"]#/L
         pupil_fn += pupil_val_results["FN"]#/L
 
+        pupil_recall += pupil_val_results["recall"]/L
+        pupil_precision += pupil_val_results["precision"]/L
 
         if debug:
             break
     val_loss_ /= L
     val_loss_iris /= L
     val_loss_pupil /= L
-    print(f"Validation iris >>> tot_val_nums : {L} iris_val : e1 => {iris_e1}, dice => {iris_dice}, iou => {iris_iou}, tp => {iris_tp}, fp => {iris_fp}, fn => {iris_fn}")
-    print(f"Validation pupil >>> tot_val_nums : {L} pupil_val : e1 => {pupil_e1}, dice => {pupil_dice}, iou => {pupil_iou}, tp => {pupil_tp}, fp => {pupil_fp}, fn => {pupil_fn}")
+
+    print(f"Validation loss >>> {val_loss_}")
+    print(f"Validation iris >>> tot_val_nums : {L} iris_val : e1 => {iris_e1}, dice => {iris_dice}, iou => {iris_iou}, tp => {iris_tp}, fp => {iris_fp}, fn => {iris_fn}, val_loss => {val_loss_iris}, recall => {iris_recall}, precision => {iris_precision}")
+    print(f"Validation pupil >>> tot_val_nums : {L} pupil_val : e1 => {pupil_e1}, dice => {pupil_dice}, iou => {pupil_iou}, tp => {pupil_tp}, fp => {pupil_fp}, fn => {pupil_fn}, val_loss_pupil => {val_loss_pupil}, recall => {pupil_recall}, precision => {pupil_precision}")
         
     logging.info('------------------------------------------------current val result-----------------------------------------------')    
     # logging.info('>iris      epoch:{:2d}   val loss:{:.7f}   E1:{:.7}    Dice:{:.7f}   IOU:{:.7f}'. \
     #     format(epoch, loss_iris, iris_e1, iris_dice, iris_iou))
     # logging.info('>pupil     epoch:{:2d}   val loss:{:.7f}   E1:{:.7}    Dice:{:.7f}   IOU:{:.7f}'. \
     #     format(epoch, loss_pupil, pupil_e1, pupil_dice, pupil_iou))
-    logging.info(f"epoch {epoch} iris >>> e1 => {iris_e1}, dice => {iris_dice}, iou => {iris_iou}, tp => {iris_tp}, fp => {iris_fp}, fn => {iris_fn}")
-    logging.info(f"epoch {epoch} pupil >>> e1 => {pupil_e1}, dice => {pupil_dice}, iou => {pupil_iou}, tp => {pupil_tp}, fp => {pupil_fp}, fn => {pupil_fn}")
+    logging.info(f"epoch {epoch} iris >>> e1 => {iris_e1}, dice => {iris_dice}, iou => {iris_iou}, tp => {iris_tp}, fp => {iris_fp}, fn => {iris_fn}, recall => {iris_recall}, precision => {iris_precision}")
+    logging.info(f"epoch {epoch} pupil >>> e1 => {pupil_e1}, dice => {pupil_dice}, iou => {pupil_iou}, tp => {pupil_tp}, fp => {pupil_fp}, fn => {pupil_fn}, recall => {pupil_recall}, precision => {pupil_precision}")
     
 
     ######################## adding scalars for log(summary writer) #########################
@@ -310,10 +318,14 @@ def validate(writer, val_loader, net, criterion, optimizer, epoch, train_args, d
     writer.add_scalar('iris_e1', iris_e1, epoch)
     writer.add_scalar('iris_dice', iris_dice, epoch)
     writer.add_scalar('iris_iou', iris_iou, epoch)
+    writer.add_scalar('iris_recall', iris_recall, epoch)
+    writer.add_scalar('iris_precision', iris_precision, epoch)
 
     writer.add_scalar('pupil_e1', pupil_e1, epoch)
     writer.add_scalar('pupil_dice', pupil_dice, epoch)
     writer.add_scalar('pupil_iou', pupil_iou, epoch)
+    writer.add_scalar('pupil_recall', pupil_recall, epoch)
+    writer.add_scalar('pupil_precision', pupil_precision, epoch)
 
     writer.add_scalar('lr', optimizer.param_groups[1]['lr'], epoch)
 
@@ -336,7 +348,8 @@ def validate(writer, val_loader, net, criterion, optimizer, epoch, train_args, d
             torch.save(optimizer.state_dict(), os.path.join(checkpoint_path, 'optimizer_outer.pt'))
         else:
             torch.save(net.state_dict(), os.path.join(checkpoint_path, 'for_outer.pth')) 
-            torch.save(optimizer.state_dict(), os.path.join(checkpoint_path, 'optimizer_inner.pt'))
+            torch.save(optimizer.state_dict(), os.path.join(checkpoint_path, 'optimizer_outer.pt'))
+            ##########
         outer_checkpoints_name = 'epoch_%d_e1_%.7f_iou_%.7f_dice_%.7f' % (epoch, iris_e1, iris_iou, iris_dice)
         logging.info(f'Saved iris checkpoints {outer_checkpoints_name}.pth!')
 
@@ -347,8 +360,15 @@ def validate(writer, val_loader, net, criterion, optimizer, epoch, train_args, d
         train_args['best_record_inner']['Dice'] = pupil_dice
         if train_args['gpu_ids']:
             torch.save(net.module.state_dict(), os.path.join(checkpoint_path, 'for_inner.pth'))
+            torch.save(optimizer.state_dict(), os.path.join(checkpoint_path, 'optimizer_inner.pt'))
+            print("here, at pupil_e1 better than train_args")
+            ##################### debugging pth write #########################
+            with open(checkpoint_path+"ss.text", "w") as f:
+                f.write("sss")
+            ###################################################################
         else:
             torch.save(net.state_dict(), os.path.join(checkpoint_path, 'for_inner.pth'))
+            torch.save(optimizer.state_dict(), os.path.join(checkpoint_path, 'optimizer_inner.pt'))
         inner_checkpoints_name = 'epoch_%d_e1_%.7f_iou_%.7f_dice_%.7f' % (epoch, pupil_e1, pupil_iou, pupil_dice)
         logging.info(f'Saved pupil checkpoints {inner_checkpoints_name}.pth!')
 
