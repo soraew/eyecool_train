@@ -363,8 +363,8 @@ def validate(writer, val_loader, net, criterion, optimizer, epoch, train_args, d
             torch.save(optimizer.state_dict(), os.path.join(checkpoint_path, 'optimizer_inner.pt'))
             print("here, at pupil_e1 better than train_args")
             ##################### debugging pth write #########################
-            with open(checkpoint_path+"ss.text", "w") as f:
-                f.write("sss")
+            # with open(checkpoint_path+"ss.text", "w") as f:
+                # f.write("sss")
             ###################################################################
         else:
             torch.save(net.state_dict(), os.path.join(checkpoint_path, 'for_inner.pth'))
