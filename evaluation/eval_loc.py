@@ -114,7 +114,7 @@ def compute_f1(n_batch, pred_masks, true_masks):
         precision_sum += precision
 
         # if precision+recall == 0:
-            # f1 = tp
+            # f1 = tp #I'm thinking the error for 20220317 was here
         # else:
             # f1 = (2*precision*recall) / (precision+recall)
         f1 = (2*precision*recall) / (precision+recall)
