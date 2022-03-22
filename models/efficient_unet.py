@@ -115,7 +115,7 @@ class EfficientUNet(nn.Module):
             # 'pred_mask': F.interpolate(pred[:,0:1,:,:], x.size()[2:], mode='bilinear', align_corners=True),
             'pred_iris_mask': F.interpolate(pred[:,0:1,:,:], x.size()[2:], mode='bilinear', align_corners=True),
             'pred_pupil_mask': F.interpolate(pred[:,1:2,:,:], x.size()[2:], mode='bilinear', align_corners=True),
-            # 'heatmap':[dec4_heatmap, dec3_heatmap, dec2_heatmap]
+            'heatmap':[dec4_heatmap, dec3_heatmap, dec2_heatmap]
         }
 
 
